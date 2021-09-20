@@ -4,9 +4,11 @@
   "private": true,
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "1.1.2",
+    "axios": "^0.21.4",
     "mapbox-gl": "1.1.1",
     "react": "16.8.6",
     "react-dom": "16.8.6",
+    "react-google-streetview": "0.0.9",
     "react-mapbox-gl": "4.5.1",
     "react-mapbox-gl-draw": "2.0.2",
     "react-scripts": "3.0.1"

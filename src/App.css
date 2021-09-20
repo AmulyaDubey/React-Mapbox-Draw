@@ -1,0 +1,15 @@
+.outer__row{
+    width: 85vw;
+    border: 1px solid black;
+    margin: 30px 0
+}
+
+.row__heading{
+    border-bottom: 1px solid black;
+    padding: 10px;
+    background-color: antiquewhite;
+}
+
+.col-6{
+    border: 1px solid black;
+}

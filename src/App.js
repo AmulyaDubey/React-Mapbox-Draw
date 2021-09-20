@@ -2,7 +2,10 @@ import React, { Component } from "react";
 import ReactMapboxGl from "react-mapbox-gl";
 import DrawControl from "react-mapbox-gl-draw";
 
+import "./App.css";
+
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
+import { getStreetViewImage } from "./apiResponse";
 
 const Map = ReactMapboxGl({
   accessToken:
@@ -12,36 +15,69 @@ const Map = ReactMapboxGl({
 export default class App extends Component {
   state = {
     coordinates: {},
+    markers: {},
+    markerSelected: [],
   };
 
-  getCoordinatesArray = (featuresArray) => {
-    var coordinatesArray = featuresArray.map((feature) => {
+  getPolygonCoordinates = (features) => {
+    var coordinatesArray = features.map((feature) => {
       return feature.geometry.coordinates;
     });
     const arr = coordinatesArray[0][0];
     return arr.slice(0, arr.length - 1);
   };
 
-  updateCoordinates = (id, coord) => {
+  getPointCoordinates = (features) => {
+    const { coordinates } = features[0].geometry;
+    return coordinates;
+  };
+
+  updatePolygonCoordinates = (id, coord) => {
     var { coordinates } = this.state;
     coordinates[id] = coord;
     this.setState({ coordinates });
   };
 
-  onDrawCreate = ({ features }) => {
-    const coord = this.getCoordinatesArray(features);
+  updateMarkerCoordinates = (id, coord) => {
+    var { markers } = this.state;
+    markers[id] = coord;
+    this.setState({ markers });
+  };
+
+  updateState = (features) => {
+    const type = features[0].geometry.type;
     const featureId = features[0].id;
-    this.updateCoordinates(featureId, coord);
+
+    if (type === "Polygon") {
+      const coord = this.getPolygonCoordinates(features);
+      this.updatePolygonCoordinates(featureId, coord);
+    } else {
+      const coord = this.getPointCoordinates(features);
+      this.updateMarkerCoordinates(featureId, coord);
+    }
+  };
+
+  onDrawCreate = ({ features }) => {
+    this.updateState(features);
   };
 
   onDrawUpdate = ({ features }) => {
-    const coord = this.getCoordinatesArray(features);
-    const featureId = features[0].id;
-    this.updateCoordinates(featureId, coord);
+    this.updateState(features);
+
+  };
+
+  showStreetView = (point) => {
+    this.setState({ markerSelected: point });
+  };
+
+  renderImage = async () => {
+    const img = await getStreetViewImage();
+    console.log(img)
+    return img;
   };
 
   render() {
-    const { coordinates } = this.state;
+    const { coordinates, markers, markerSelected } = this.state;
 
     return (
       <div>
@@ -58,19 +94,115 @@ export default class App extends Component {
             onDrawUpdate={this.onDrawUpdate}
           />
         </Map>
-        <h2>Figures drawn on map:</h2>
-        {Object.values(coordinates).map((arr, i) => (
-          <div>
-            <h4> Feature {i + 1} coordinates </h4>
-            <ol>
-              {arr.map((pair) => (
-                <li>
-                  x: {pair[0]} &nbsp; y: {pair[1]}
-                </li>
-              ))}
-            </ol>
+        <div className="row outer__row">
+          <div className="col-6">
+            <h4 className="text-center row__heading">Polygons</h4>
+            <div className="row">
+              <div className="col-2">
+                <h5>#</h5>
+              </div>
+              <div className="col-5">
+                <h5>Corner Points</h5>
+              </div>
+              <div className="col-5">
+                <h5>Coordinates</h5>
+              </div>
+            </div>
+            {Object.values(coordinates).map((arr, i) => (
+              <div className="row">
+                <div className="col-2">
+                  <p>{i + 1}</p>
+                </div>
+                <div className="col-5">
+                  <p>{arr.length}</p>
+                </div>
+                <div className="col-5">
+                  <ol>
+                    {arr.map((pair) => (
+                      <li>
+                        x: {pair[0].toFixed(2)} &nbsp; y: {pair[1].toFixed(2)}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+          <div className="col-6">
+            <h4 className="text-center row__heading">Markers</h4>
+            <div className="row">
+              <div className="col-2">
+                <h5>#</h5>
+              </div>
+              <div className="col-5">
+                <h5>Coordinates</h5>
+              </div>
+              <div className="col-5">
+                <h5></h5>
+              </div>
+            </div>
+            {Object.values(markers).map((point, i) => (
+              <div className="row">
+                <div className="col-2">
+                  <p>{i + 1}</p>
+                </div>
+                <div className="col-5">
+                  <p>
+                    x: {point[0].toFixed(2)} &nbsp; y: {point[1].toFixed(2)}
+                  </p>
+                </div>
+                <div className="col-5">
+                  <button
+                    className="btn btn-outline-primary btn-sm"
+                    data-toggle="modal"
+                    data-target="#exampleModalCenter"
+                    onClick={() => this.showStreetView(point)}
+                  >
+                    Show street view
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div
+          class="modal fade"
+          id="exampleModalCenter"
+          tabindex="-1"
+          role="dialog"
+          aria-labelledby="exampleModalCenterTitle"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">
+                  Google Street View
+                </h5>
+                <button
+                  type="button"
+                  class="close"
+                  data-dismiss="modal"
+                  aria-label="Close"
+                >
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <img src={this.renderImage()} alt="street" />
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-dismiss="modal"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
