@@ -17,6 +17,7 @@ export default class App extends Component {
     coordinates: {},
     markers: {},
     markerSelected: [],
+    imgBuffer: "",
   };
 
   getPolygonCoordinates = (features) => {
@@ -63,21 +64,25 @@ export default class App extends Component {
 
   onDrawUpdate = ({ features }) => {
     this.updateState(features);
-
   };
 
-  showStreetView = (point) => {
+  showStreetView = async (point) => {
+    const imgBuffer = await getStreetViewImage(point);
+    var blob = new Blob([imgBuffer]);
+
+    var image = document.getElementById("streetViewImage");
+
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      image.src = e.target.result;
+    };
+    reader.readAsDataURL(blob);
+
     this.setState({ markerSelected: point });
   };
 
-  renderImage = async () => {
-    const img = await getStreetViewImage();
-    console.log(img)
-    return img;
-  };
-
   render() {
-    const { coordinates, markers, markerSelected } = this.state;
+    const { coordinates, markers, imgBuffer } = this.state;
 
     return (
       <div>
@@ -189,7 +194,7 @@ export default class App extends Component {
                 </button>
               </div>
               <div class="modal-body">
-                <img src={this.renderImage()} alt="street" />
+                <img id="streetViewImage" alt="street" />
               </div>
               <div class="modal-footer">
                 <button
